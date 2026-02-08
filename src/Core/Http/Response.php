@@ -9,6 +9,7 @@ class Response
         protected int $statusCode = 200,
         protected array $headers = []
     ) {
+        // Default header
         $this->addHeader('Content-Type', 'text/html; charset=UTF-8');
     }
 
@@ -34,15 +35,23 @@ class Response
      */
     public function send(): void
     {
-        // Invia lo status code
+        // 1. Prevenzione errori: se l'output è già stato inviato, non possiamo inviare header
+        if (headers_sent()) {
+            echo $this->content;
+            return;
+        }
+
+        // 2. Invia lo status code
         http_response_code($this->statusCode);
 
-        // Invia gli headers
+        // 3. Invia gli headers
         foreach ($this->headers as $name => $value) {
             header("$name: $value");
         }
 
-        // Invia il corpo
+        // 4. Invia il corpo
         echo $this->content;
+
+        // 5. Opzionale: termina l'esecuzione se necessario (spesso utile per risposte JSON/Redirect)
     }
 }

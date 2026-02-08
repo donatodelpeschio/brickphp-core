@@ -18,17 +18,32 @@ class Request
      */
     public static function capture(): self
     {
-        return new self($_GET, $_POST, $_SERVER, $_FILES, $_COOKIE);
+        // Supportiamo anche il parsing del body JSON per le API
+        $post = $_POST;
+        if (str_contains($_SERVER['CONTENT_TYPE'] ?? '', 'application/json')) {
+            $json = json_decode(file_get_contents('php://input'), true);
+            $post = array_merge($post, $json ?? []);
+        }
+
+        return new self($_GET, $post, $_SERVER, $_FILES, $_COOKIE);
     }
 
     public function getPath(): string
     {
         $uri = $this->server['REQUEST_URI'] ?? '/';
-        return parse_url($uri, PHP_URL_PATH);
+        $path = parse_url($uri, PHP_URL_PATH) ?: '/';
+
+        // Pulizia finale: assicura che inizi con / e non finisca con / (tranne la root)
+        return ($path !== '/') ? rtrim($path, '/') : $path;
     }
 
     public function getMethod(): string
     {
+        // Supporto per il Method Spoofing (es. invio di un _method POST per simulare un DELETE)
+        if ($this->post['_method'] ?? null) {
+            return strtoupper($this->post['_method']);
+        }
+
         return strtoupper($this->server['REQUEST_METHOD'] ?? 'GET');
     }
 
@@ -47,7 +62,7 @@ class Request
         $this->session = $session;
     }
 
-    public function session(): Session
+    public function session(): ?Session
     {
         return $this->session;
     }

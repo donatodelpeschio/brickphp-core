@@ -1,3 +1,11 @@
+# Dipendenze
 vendor/
 composer.lock
-.env
+
+# File di sistema e IDE
+.idea/
+.vscode/
+.DS_Store
+
+# Log di test (se presenti)
+*.log

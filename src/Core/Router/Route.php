@@ -9,7 +9,10 @@ class Route
         public string $uri,
         public mixed $handler,
         public array $middlewares = []
-    ) {}
+    ) {
+        // Normalizziamo la URI della rotta al momento della creazione
+        $this->uri = '/' . trim($uri, '/');
+    }
 
     /**
      * Verifica se la URI richiesta corrisponde a questa rotta
@@ -17,12 +20,15 @@ class Route
      */
     public function matches(string $requestUri): ?array
     {
-        // Converte {id} in regex ([^/]+)
+        // Normalizziamo la URI richiesta per il confronto
+        $requestUri = '/' . trim($requestUri, '/');
+
+        // Converte {id} in regex ([^/]+) per catturare i parametri dinamici
         $pattern = preg_replace('/\{(\w+)\}/', '(?P<$1>[^/]+)', $this->uri);
-        $pattern = "#^" . $pattern . "$#";
+        $pattern = "#^" . $pattern . "$#i"; // Aggiunto flag 'i' per case-insensitive
 
         if (preg_match($pattern, $requestUri, $matches)) {
-            // Filtra solo i parametri con nome
+            // Filtra solo i parametri con nome (quelli catturati dalla regex)
             return array_filter($matches, fn($key) => !is_int($key), ARRAY_FILTER_USE_KEY);
         }
 

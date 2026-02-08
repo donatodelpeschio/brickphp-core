@@ -14,7 +14,7 @@ class Dispatcher
     {
         // 1. Se l'handler è una Closure (funzione anonima)
         if ($handler instanceof \Closure) {
-            return $this->callAction($handler, $params);
+            return $this->callAction($handler, $params, $request);
         }
 
         // 2. Se l'handler è un array [ControllerClass, 'method']
@@ -31,7 +31,6 @@ class Dispatcher
                 throw new \Exception("Metodo $method non trovato in $controllerClass", 500);
             }
 
-            // Iniettiamo la Request come primo parametro se il metodo la richiede
             return $this->callAction([$controller, $method], $params, $request);
         }
 
@@ -41,15 +40,19 @@ class Dispatcher
     /**
      * Esegue l'azione finale assicurandosi che il ritorno sia una Response
      */
-    protected function callAction(callable $callback, array $params, ?Request $request = null): Response
+    protected function callAction(callable $callback, array $params, Request $request): Response
     {
-        // Uniamo la Request ai parametri della rotta (es. id)
-        $arguments = $request ? array_merge(['request' => $request], $params) : $params;
+        /**
+         * Miglioramento: Ordiniamo i parametri.
+         * Passiamo la Request come primo argomento, seguita dai parametri dinamici (es. {id}).
+         * Questo permette ai controller di fare: index(Request $r, $id)
+         */
+        $arguments = array_merge([$request], array_values($params));
 
         // Esegue la funzione/metodo
         $result = call_user_func_array($callback, $arguments);
 
-        // Se il controller restituisce una stringa, la trasformiamo in una Response
+        // Se il controller restituisce una stringa (es. return "Ciao"), la trasformiamo in Response
         if (!$result instanceof Response) {
             return new Response((string)$result);
         }

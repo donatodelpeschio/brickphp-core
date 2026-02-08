@@ -16,6 +16,10 @@ class QueryBuilder
     public function table(string $table): self
     {
         $this->table = $table;
+        // Reset delle proprietà per evitare "residui" da query precedenti
+        $this->where = [];
+        $this->bindings = [];
+        $this->columns = ['*'];
         return $this;
     }
 
@@ -32,6 +36,9 @@ class QueryBuilder
         return $this;
     }
 
+    /**
+     * Recupera tutti i risultati
+     */
     public function get(): array
     {
         $sql = "SELECT " . implode(', ', $this->columns) . " FROM {$this->table}";
@@ -44,6 +51,18 @@ class QueryBuilder
         $statement->execute($this->bindings);
 
         return $statement->fetchAll();
+    }
+
+    /**
+     * Recupera un singolo record per ID (Metodo Helper comodissimo)
+     */
+    public function find(int|string $id)
+    {
+        $sql = "SELECT " . implode(', ', $this->columns) . " FROM {$this->table} WHERE id = ? LIMIT 1";
+        $statement = $this->pdo->prepare($sql);
+        $statement->execute([$id]);
+
+        return $statement->fetch();
     }
 
     public function insert(array $data): bool

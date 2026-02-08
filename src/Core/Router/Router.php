@@ -16,6 +16,12 @@ class Router
         $this->addRoute('POST', $uri, $handler);
     }
 
+    /** * Supporto per PUT, PATCH e DELETE per architetture RESTful
+     */
+    public function put(string $uri, $handler): void { $this->addRoute('PUT', $uri, $handler); }
+    public function patch(string $uri, $handler): void { $this->addRoute('PATCH', $uri, $handler); }
+    public function delete(string $uri, $handler): void { $this->addRoute('DELETE', $uri, $handler); }
+
     protected function addRoute(string $method, string $uri, $handler): void
     {
         $this->routes[$method][] = new Route($method, $uri, $handler);
@@ -35,6 +41,8 @@ class Router
             }
         }
 
-        throw new \Exception("Route not found", 404);
+        // Se la rotta esiste ma il metodo è sbagliato, potresti lanciare un 405 Method Not Allowed
+        // Per ora manteniamo il 404 per semplicità
+        throw new \Exception("Pagina non trovata", 404);
     }
 }

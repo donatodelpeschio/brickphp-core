@@ -6,13 +6,27 @@ class Session
 {
     public function __construct()
     {
+        // Usiamo la costante definita nello Skeleton per trovare la cartella storage
+        // Aggiungiamo un fallback per sicurezza nel caso la costante non sia definita
+        $base = defined('BRICK_PATH') ? BRICK_PATH : dirname($_SERVER['DOCUMENT_ROOT'] ?? '/var/www/html');
+        $savePath = $base . '/storage/sessions';
+
+        // Assicuriamoci che la cartella esista
+        if (!is_dir($savePath)) {
+            @mkdir($savePath, 0775, true);
+        }
+
+        // Diciamo a PHP di usare questa cartella per le sessioni
+        // Questo evita che PHP usi la cartella di sistema (spesso non scrivibile in Docker)
+        if (is_writable($savePath)) {
+            session_save_path($savePath);
+        }
+
         if (session_status() === PHP_SESSION_NONE) {
-            // Impostiamo il percorso di salvataggio nella cartella storage
-            session_save_path(__DIR__ . '/../../../storage/sessions');
-            ini_set('session.cookie_httponly', 1); // Impedisce attacchi XSS
-            ini_set('session.use_only_cookies', 1);
-            ini_set('session.cookie_samesite', 'Lax');
-            session_start();
+            // Impediamo l'invio di cookie di sessione se gli header sono già stati inviati
+            if (!headers_sent()) {
+                session_start();
+            }
         }
     }
 
@@ -53,7 +67,9 @@ class Session
 
     public function destroy(): void
     {
-        session_destroy();
-        $_SESSION = [];
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_destroy();
+            $_SESSION = [];
+        }
     }
 }

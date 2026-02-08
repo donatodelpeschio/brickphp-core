@@ -6,17 +6,34 @@ class FileCache implements CacheInterface
 {
     protected string $path;
 
-    public function __construct(string $path)
+    public function __construct(?string $path = null)
     {
-        $this->path = rtrim($path, '/') . '/';
+        // Se non viene passato un percorso, usiamo quello di default basato su BRICK_PATH
+        // Altrimenti usiamo quello ricevuto (utile per i test o configurazioni custom)
+        $targetPath = $path ?: BRICK_PATH . '/storage/cache';
+
+        $this->path = rtrim($targetPath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+
+        // Assicuriamoci che la cartella esista e sia scrivibile
+        if (!is_dir($this->path)) {
+            @mkdir($this->path, 0775, true);
+        }
     }
 
     public function get(string $key, mixed $default = null): mixed
     {
         $file = $this->path . md5($key);
-        if (!file_exists($file)) return $default;
+        if (!file_exists($file)) {
+            return $default;
+        }
 
-        $data = unserialize(file_get_contents($file));
+        $content = @file_get_contents($file);
+        if (!$content) {
+            return $default;
+        }
+
+        $data = unserialize($content);
+
         if (time() > $data['expires']) {
             $this->forget($key);
             return $default;
@@ -31,16 +48,30 @@ class FileCache implements CacheInterface
             'expires' => time() + $ttl,
             'value' => $value
         ];
-        return (bool) file_put_contents($this->path . md5($key), serialize($data));
+
+        $file = $this->path . md5($key);
+        return (bool) @file_put_contents($file, serialize($data));
+    }
+
+    public function has(string $key): bool
+    {
+        return $this->get($key) !== null;
     }
 
     public function forget(string $key): bool
     {
         $file = $this->path . md5($key);
-        return file_exists($file) ? unlink($file) : true;
+        return file_exists($file) ? @unlink($file) : true;
     }
 
-    // Altri metodi...
-    public function has(string $key): bool { return !is_null($this->get($key)); }
-    public function flush(): bool { /* logic per svuotare cartella */ return true; }
+    public function flush(): bool
+    {
+        // Logica per svuotare la cartella cache
+        foreach (glob($this->path . '*') as $file) {
+            if (is_file($file)) {
+                @unlink($file);
+            }
+        }
+        return true;
+    }
 }
