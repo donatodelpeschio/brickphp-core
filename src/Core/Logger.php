@@ -6,11 +6,15 @@ namespace BrickPHP\Core;
 class Logger
 {
     public static function log($level, $message) {
-        $logDir = dirname(__DIR__, 2) . '/storage/logs'; // Assicurati che il percorso sia corretto rispetto al vendor
+        // Risaliamo dal vendor alla root dello Skeleton
+        // Se Logger è in vendor/brickphp/core/src/Core/Logger.php
+        // dobbiamo risalire di 4 livelli per arrivare a /var/www/html/
+        $basePath = dirname(__DIR__, 4);
+        $logDir = $basePath . '/storage/logs';
 
         if (!is_dir($logDir)) {
-            // Il terzo parametro 'true' permette la creazione ricorsiva
-            // Usiamo @ per evitare che un fallimento blocchi l'intera app
+            // Usiamo @ per silenziare eventuali warning se la cartella esiste già
+            // o se i permessi sono momentaneamente negati
             @mkdir($logDir, 0775, true);
         }
 
@@ -18,6 +22,7 @@ class Logger
         $date = date('Y-m-d H:i:s');
         $formattedMessage = "[$date] [$level] $message" . PHP_EOL;
 
+        // Se non riesce a scrivere, non bloccare l'intera applicazione
         @file_put_contents($logFile, $formattedMessage, FILE_APPEND);
     }
 
