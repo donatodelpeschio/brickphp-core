@@ -1,0 +1,17 @@
+{
+  "name": "brickphp/core",
+  "description": "The core engine of BrickPHP framework",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "BrickPHP\\": "src/"
+    },
+    "files": [
+      "src/Support/Helpers.php"
+    ]
+  },
+  "require": {
+    "php": "^8.2",
+    "vlucas/phpdotenv": "^5.5"
+  }
+}
