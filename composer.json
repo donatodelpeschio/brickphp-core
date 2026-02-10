@@ -1,6 +1,13 @@
 {
   "name": "brickphp/core",
   "description": "The core engine of BrickPHP framework",
+  "authors": [
+    {
+      "name": "Donato",
+      "email": "donato@example.com",
+      "role": "Developer"
+    }
+  ],
   "license": "MIT",
   "autoload": {
     "psr-4": {
